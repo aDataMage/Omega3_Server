@@ -3,7 +3,6 @@
 **/**/*.log
 airflow.cfg
 airflow.db
-**/**/*.txt
 *.zip
 *.chrome*
 *.env
