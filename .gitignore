@@ -1,0 +1,9 @@
+/datapipeline/data/**/*.csv
+**/**/*-312.pyc
+**/**/*.log
+airflow.cfg
+airflow.db
+**/**/*.txt
+*.zip
+*.chrome*
+*.env
