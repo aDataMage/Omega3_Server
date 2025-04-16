@@ -18,6 +18,12 @@ def get_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
     products = product_crud.get_products(db=db, skip=skip, limit=limit)
     return products
 
+@router.get("/top")
+def get_top_n_products(
+    n: int = 10, db: Session = Depends(get_db), metric: str = "Total Sales", start_date: str = None, end_date: str = None   
+):
+    products = product_crud.get_top_products_by_metric(db=db, metric=metric, start_date=start_date, end_date=end_date, n=n)
+    return products
 
 @router.get("/{product_id}", response_model=Product)
 def get_product(product_id: str, db: Session = Depends(get_db)):
@@ -45,3 +51,5 @@ def delete_product(product_id: str, db: Session = Depends(get_db)):
     if db_product is None:
         raise HTTPException(status_code=404, detail="Product not found")
     return db_product
+
+
