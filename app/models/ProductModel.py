@@ -9,8 +9,8 @@ from sqlalchemy import (
 from uuid import uuid4
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime, timezone
-from app.db.base import Base
-from app.enumsC import (
+from db.base import Base
+from enumsC import (
     BrandEnum,
     CategoryEnum,
 )

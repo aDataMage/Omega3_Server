@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app.models.CustomersModel import Customer
-from app.schemas.CustomerSchema import CustomerCreate
+from models.CustomersModel import Customer
+from schemas.CustomerSchema import CustomerCreate
 import uuid
 
 

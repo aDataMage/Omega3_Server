@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
-from app.enumsC import (
+from enumsC import (
     RegionEnum,
     MaritalStatusEnum,
     EducationLevelEnum,

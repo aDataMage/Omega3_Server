@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models.OrderModel import Order
-from app.models.OrderItemsModel import OrderItem
-from app.models.CustomersModel import Customer
-from app.models.ProductModel import Product
-from app.models.StoreModel import Store
-from app.models.ReturnsModel import Return as Returns
+from models.OrderModel import Order
+from models.OrderItemsModel import OrderItem
+from models.CustomersModel import Customer
+from models.ProductModel import Product
+from models.StoreModel import Store
+from models.ReturnsModel import Return as Returns
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from dateutil.relativedelta import relativedelta

@@ -2,8 +2,8 @@ from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.crud import KpiCrud
-from app.db.session import get_db
+from crud import KpiCrud
+from db.session import get_db
 
 router = APIRouter()
 

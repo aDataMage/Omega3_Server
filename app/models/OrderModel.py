@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Date, Enum, ForeignKey, Numeric, TIMESTAMP, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.db.base import Base
-from app.enumsC import (
+from db.base import Base
+from enumsC import (
     OrderStatusEnum,
     PaymentMethodEnum,
     PaymentStatusEnum,

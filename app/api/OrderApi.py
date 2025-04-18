@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.schemas.OrderSchema import Order, OrderCreate, OrderUpdate
-from app.crud import OrderCrud
-from app.db.session import get_db
+from schemas.OrderSchema import Order, OrderCreate, OrderUpdate
+from crud import OrderCrud
+from db.session import get_db
 
 router = APIRouter()
 

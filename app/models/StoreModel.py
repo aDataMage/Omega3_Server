@@ -2,8 +2,8 @@ from sqlalchemy import Column, String, Boolean, DateTime, Enum as PgEnum
 from sqlalchemy.dialects.postgresql import UUID
 from uuid import uuid4
 from datetime import datetime
-from app.db.base import Base  # assuming you have a Base class defined here
-from app.enumsC import RegionEnum  # assuming you have a RegionEnum defined here
+from db.base import Base  # assuming you have a Base class defined here
+from enumsC import RegionEnum  # assuming you have a RegionEnum defined here
 from sqlalchemy.orm import relationship
 
 

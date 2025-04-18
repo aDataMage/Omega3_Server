@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app.models.ReturnsModel import Return
-from app.schemas.ReturnsSchema import ReturnCreate, ReturnUpdate
+from models.ReturnsModel import Return
+from schemas.ReturnsSchema import ReturnCreate, ReturnUpdate
 
 # Create a new return
 

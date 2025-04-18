@@ -3,8 +3,8 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
 
-from app.db.base import Base
-from app.enumsC import ReturnStatusEnum
+from db.base import Base
+from enumsC import ReturnStatusEnum
 
 
 class Return(Base):

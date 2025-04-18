@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app.models.StoreModel import Store
-from app.schemas.StoreSchema import StoreCreate, StoreUpdate
+from models.StoreModel import Store
+from schemas.StoreSchema import StoreCreate, StoreUpdate
 import uuid
 
 

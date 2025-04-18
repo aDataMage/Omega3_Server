@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from uuid import UUID
 from datetime import date, datetime
-from app.enumsC import ReturnStatusEnum
+from enumsC import ReturnStatusEnum
 
 
 class ReturnBase(BaseModel):

@@ -1,12 +1,12 @@
 from datetime import datetime, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.models.ProductModel import Product
-from app.models.OrderModel import Order
-from app.models.OrderItemsModel import OrderItem
-from app.models.ReturnsModel import Return as Returns
-from app.models.StoreModel import Store
-from app.schemas.ProductSchema import ProductCreate, ProductUpdate
+from models.ProductModel import Product
+from models.OrderModel import Order
+from models.OrderItemsModel import OrderItem
+from models.ReturnsModel import Return as Returns
+from models.StoreModel import Store
+from schemas.ProductSchema import ProductCreate, ProductUpdate
 from sqlalchemy import func, desc
 from datetime import datetime
 from typing import Literal, Optional

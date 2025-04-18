@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app.models.OrderItemsModel import OrderItem
-from app.schemas.OrderItemsSchema import OrderItemCreate, OrderItemUpdate
+from models.OrderItemsModel import OrderItem
+from schemas.OrderItemsSchema import OrderItemCreate, OrderItemUpdate
 
 # Create a new order item
 

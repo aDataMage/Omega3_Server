@@ -2,8 +2,8 @@ import uuid
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
-from app.db.base import Base
-from app.enumsC import (
+from db.base import Base
+from enumsC import (
     RegionEnum,
     MaritalStatusEnum,
     EducationLevelEnum,
