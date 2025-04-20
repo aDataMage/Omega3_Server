@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from schemas.StoreSchema import Store
@@ -18,6 +19,14 @@ def read_stores(db: Session = Depends(get_db)):
 def add_store(store: StoreCreate, db: Session = Depends(get_db)):
     return store_crud.create_store(db, store)
 
+@router.get("/top")
+def get_top_n_stores(
+    n: int = 10, db: Session = Depends(get_db), metric: str = "Total Sales", start_date: str = None, end_date: str = None 
+):
+    start_date = datetime.strptime(start_date, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
+    stores = store_crud.get_top_stores_by_metric(db=db, metric=metric, start_date=start_date, end_date=end_date, n=n)
+    return stores
 
 @router.get("/{store_id}", response_model=Store)
 def read_store(store_id: str, db: Session = Depends(get_db)):

@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from schemas.ProductSchema import Product
@@ -20,8 +21,10 @@ def get_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
 
 @router.get("/top")
 def get_top_n_products(
-    n: int = 10, db: Session = Depends(get_db), metric: str = "Total Sales", start_date: str = None, end_date: str = None   
+    n: int = 10, db: Session = Depends(get_db), metric: str = "Total Sales", start_date: str = None, end_date: str = None 
 ):
+    start_date = datetime.strptime(start_date, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
     products = product_crud.get_top_products_by_metric(db=db, metric=metric, start_date=start_date, end_date=end_date, n=n)
     return products
 

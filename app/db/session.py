@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = "postgresql://adatamage:adatamage2002@localhost:5432/ecommdb"
+DATABASE_URL = "postgresql://adatamage:adatamage2002@localhost:5433/ecommdb"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
