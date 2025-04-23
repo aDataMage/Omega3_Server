@@ -34,3 +34,7 @@ app.include_router(OrderApi.router, prefix="/orders", tags=["orders"])
 app.include_router(ReturnsApi.router, prefix="/returns", tags=["returns"])
 app.include_router(OrderItemApi.router, prefix="/order-items", tags=["order_items"])
 app.include_router(KpiApi.router, prefix="/kpi", tags=["kpi"])
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

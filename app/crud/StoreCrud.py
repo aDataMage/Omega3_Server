@@ -154,3 +154,16 @@ def get_top_stores_by_metric(
     )
 
     return result
+
+def get_unique_regions(db: Session):
+    return [r[0] for r in db.query(Store.region).distinct().all()]
+
+
+def get_unique_store_names(db: Session, selected_regions: list[str] | None = None):
+    query = db.query(Store.name)
+
+    if selected_regions and "all" not in selected_regions:
+        query = query.filter(Store.region.in_(selected_regions))
+
+    return [s[0] for s in query.distinct().all()]
+

@@ -55,4 +55,13 @@ def delete_product(product_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     return db_product
 
+@router.get("/filters/products")
+def fetch_product_names(db: Session = Depends(get_db)):
+    return product_crud.get_unique_product_names(db)
+
+@router.get("/filters/brands")
+def fetch_brand_names(db: Session = Depends(get_db)):
+    return product_crud.get_unique_brand_names(db)
+
+
 

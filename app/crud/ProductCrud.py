@@ -138,3 +138,18 @@ def get_top_products_by_metric(
     )
 
     return result
+
+# Get all unique product names
+def get_unique_product_names(db: Session, selected_brands: list[str] | None = None):
+    query = db.query(Product.name)
+
+    if selected_brands and "all" not in selected_brands:
+        query = query.filter(Product.brand.in_(selected_brands))
+
+    return [p[0] for p in query.distinct().all()]
+
+
+# Get all unique brand names
+def get_unique_brand_names(db: Session):
+    return [b[0] for b in db.query(Product.brand).distinct().all()]
+

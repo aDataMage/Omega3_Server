@@ -58,3 +58,11 @@ def read_store_by_name(store_name: str, db: Session = Depends(get_db)):
     if db_store is None:
         raise HTTPException(status_code=404, detail="Store not found")
     return db_store
+
+@router.get("/filters/regions")
+def fetch_regions(db: Session = Depends(get_db)):
+    return store_crud.get_unique_regions(db)
+
+@router.get("/filters/stores")
+def fetch_stores(db: Session = Depends(get_db)):
+    return store_crud.get_unique_store_names(db)

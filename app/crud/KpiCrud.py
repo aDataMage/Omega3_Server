@@ -7,7 +7,7 @@ from models.ProductModel import Product
 from models.StoreModel import Store
 from models.ReturnsModel import Return as Returns
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import Optional, List, Dict, Union, Any
 from dateutil.relativedelta import relativedelta
 
 
@@ -394,6 +394,183 @@ def get_total_returns(
    
     }
 
+def fetch_insights(
+    db: Session,
+    comparison_level: str,
+    metric: str,
+    selected_regions: List[str] = None,
+    selected_stores: List[str] = None,
+    selected_brands: List[str] = None,
+    selected_products: List[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+) -> List[Dict[str, Union[str, float, int]]]:
+    """
+    Fetch insights data with flexible filtering and comparison capabilities.
+    """
+    # Validate inputs
+    valid_comparison_levels = ['region', 'store', 'brand', 'product']
+    if comparison_level not in valid_comparison_levels:
+        raise ValueError(f"Invalid comparison level. Must be one of: {valid_comparison_levels}")
+
+    valid_metrics = {
+        "Total Sales": func.sum(OrderItem.price * OrderItem.quantity),
+        "Total Orders": func.count(OrderItem.order_item_id),
+        "Total Returns": func.count(Returns.return_id),
+        "Total Profit": func.sum((OrderItem.price - Product.cost) * OrderItem.quantity),
+    }
+    if metric not in valid_metrics:
+        raise ValueError(f"Invalid metric. Must be one of: {list(valid_metrics.keys())}")
+
+    # Set default end date to now if not provided
+    end_date = end_date or datetime.now(timezone.utc)
+
+    # Get current period results
+    current_results = _fetch_insights_data(
+        db=db,
+        comparison_level=comparison_level,
+        metric=metric,
+        selected_regions=selected_regions,
+        selected_stores=selected_stores,
+        selected_brands=selected_brands,
+        selected_products=selected_products,
+        start_date=start_date,
+        end_date=end_date,
+        metric_expression=valid_metrics[metric]
+    )
+
+    # Calculate previous period results if dates are provided
+    if start_date and end_date:
+        prev_start = start_date - (end_date - start_date) - timedelta(days=1)
+        prev_end = start_date - timedelta(days=1)
+        
+        prev_results = _fetch_insights_data(
+            db=db,
+            comparison_level=comparison_level,
+            metric=metric,
+            selected_regions=selected_regions,
+            selected_stores=selected_stores,
+            selected_brands=selected_brands,
+            selected_products=selected_products,
+            start_date=prev_start,
+            end_date=prev_end,
+            metric_expression=valid_metrics[metric]
+        )
+        
+        # Create a lookup for previous results
+        prev_lookup = {item['comparison_value']: item for item in prev_results}
+        
+        # Add percentage change to current results
+        for current in current_results:
+            prev_value = prev_lookup.get(current['comparison_value'], {}).get('metric_value', 0)
+            curr_value = current['metric_value']
+            
+            if prev_value > 0:
+                current['percentage_change'] = ((curr_value - prev_value) / prev_value) * 100
+            else:
+                current['percentage_change'] = 0.0 if curr_value == 0 else 100.0
+    
+    return current_results
+
+def _fetch_insights_data(
+    db: Session,
+    comparison_level: str,
+    metric: str,
+    selected_regions: List[str],
+    selected_stores: List[str],
+    selected_brands: List[str],
+    selected_products: List[str],
+    start_date: Optional[datetime],
+    end_date: Optional[datetime],
+    metric_expression: Any
+) -> List[Dict[str, Union[str, float, int]]]:
+    """Helper function to fetch data for a specific time period."""
+    query = db.query()
+
+    # Select fields based on comparison level
+    if comparison_level == 'region':
+        query = query.add_columns(Store.region.label("comparison_value"))
+    elif comparison_level == 'store':
+        query = query.add_columns(
+            Store.store_id.label("comparison_value"),
+            Store.name.label("store_name")
+        )
+    elif comparison_level == 'brand':
+        query = query.add_columns(Product.brand.label("comparison_value"))
+    elif comparison_level == 'product':
+        query = query.add_columns(
+            Product.product_id.label("comparison_value"),
+            Product.name.label("product_name")
+        )
+
+    query = query.add_columns(metric_expression.label("metric_value"))
+
+    # Build joins based on metric
+    if metric in ["Total Sales", "Total Orders", "Total Profit"]:
+        query = query.select_from(OrderItem)
+        query = query.join(Order, Order.order_id == OrderItem.order_id)
+        query = query.join(Product, Product.product_id == OrderItem.product_id)
+        
+        if comparison_level in ['region', 'store']:
+            query = query.join(Store, Store.store_id == Order.store_id)
+    elif metric == "Total Returns":
+        query = query.select_from(Returns)
+        query = query.join(OrderItem, OrderItem.order_item_id == Returns.order_item_id)
+        query = query.join(Order, Order.order_id == OrderItem.order_id)
+        query = query.join(Product, Product.product_id == OrderItem.product_id)
+        
+        if comparison_level in ['region', 'store']:
+            query = query.join(Store, Store.store_id == Order.store_id)
+
+    # Apply filters
+    if comparison_level != "region" and selected_regions:
+        query = query.filter(Store.region.in_(selected_regions))
+    
+    if comparison_level != "store" and selected_stores:
+        query = query.filter(Order.store_id.in_(selected_stores))
+    
+    if comparison_level != "brand" and selected_brands:
+        query = query.filter(Product.brand.in_(selected_brands))
+    
+    if comparison_level != "product" and selected_products:
+        query = query.filter(OrderItem.product_id.in_(selected_products))
+
+    # Date filtering
+    if start_date and end_date:
+        date_field = Returns.return_date if metric == "Total Returns" else Order.order_date
+        query = query.filter(date_field.between(start_date, end_date))
+
+    # Group by
+    group_by_fields = []
+    if comparison_level == 'region':
+        group_by_fields.append(Store.region)
+    elif comparison_level == 'store':
+        group_by_fields.extend([Store.store_id, Store.name])
+    elif comparison_level == 'brand':
+        group_by_fields.append(Product.brand)
+    elif comparison_level == 'product':
+        group_by_fields.extend([Product.product_id, Product.name])
+    
+    query = query.group_by(*group_by_fields)
+
+    # Execute and format results
+    results = query.all()
+    formatted_results = []
+    for row in results:
+        result_dict = {
+            'comparison_value': row.comparison_value,
+            'metric_value': float(row.metric_value or 0),
+            'metric_name': metric
+        }
+        
+        if hasattr(row, 'store_name'):
+            result_dict['store_name'] = row.store_name
+        if hasattr(row, 'product_name'):
+            result_dict['product_name'] = row.product_name
+            
+        formatted_results.append(result_dict)
+
+    return formatted_results
 
 def get_all_kpi(db: Session, start_date: datetime, end_date: Optional[datetime] = None):
     if start_date.tzinfo is None:
