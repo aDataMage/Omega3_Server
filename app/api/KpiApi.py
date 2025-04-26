@@ -40,7 +40,17 @@ def get_insight(
     start_date: str = Query(..., description="Start date in YYYY-MM-DD format"),
     end_date: str = Query(None, description="End date in YYYY-MM-DD format"),
     db: Session = Depends(get_db),
+    
 ):
+    region_list = selected_regions or []
+    store_list = selected_stores or []
+    brand_list = selected_brands or []
+    product_list = selected_products or []
+
+    loging = logger.logger
+    
+    loging.debug(region_list)      
+    
     try:
         # Parse dates with timezone awareness
         start_date = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
@@ -57,10 +67,10 @@ def get_insight(
             db=db,
             comparison_level=comparison_level,
             metric=metric,
-            selected_regions=selected_regions,
-            selected_stores=selected_stores,
-            selected_brands=selected_brands,
-            selected_products=selected_products,
+            selected_regions=region_list,
+            selected_stores=store_list,
+            selected_brands=brand_list,
+            selected_products=product_list,
             start_date=start_date,
             end_date=end_date
         )
@@ -96,7 +106,6 @@ def get_insight(
     except Exception as e:
         logger.logger.exception("Unexpected error in get_insight")  # This logs the full traceback
         raise HTTPException(status_code=500, detail="Internal server error")  
-
 
 @router.get("/total-sales")
 def get_total_sales(

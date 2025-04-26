@@ -159,11 +159,16 @@ def get_unique_regions(db: Session):
     return [r[0] for r in db.query(Store.region).distinct().all()]
 
 
-def get_unique_store_names(db: Session, selected_regions: list[str] | None = None):
-    query = db.query(Store.name)
 
+def get_unique_store_names(db: Session, selected_regions: list[str] | None = None):    
+    query = db.query(Store.store_id, Store.name)
+    
     if selected_regions and "all" not in selected_regions:
-        query = query.filter(Store.region.in_(selected_regions))
+        valid_regions = [r for r in selected_regions if r]
 
-    return [s[0] for s in query.distinct().all()]
+        if valid_regions:
+            query = query.filter(Store.region.in_(valid_regions))
+    results = query.distinct().order_by(Store.name).all()
+    print(f"Debug - Found {len(results)} stores")
+    return [{"store_id": str(store_id), "name": name} for store_id, name in results]
 

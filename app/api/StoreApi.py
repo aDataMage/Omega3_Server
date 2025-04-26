@@ -1,5 +1,6 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from schemas.StoreSchema import Store
 from schemas.StoreSchema import StoreCreate, StoreUpdate
@@ -64,5 +65,7 @@ def fetch_regions(db: Session = Depends(get_db)):
     return store_crud.get_unique_regions(db)
 
 @router.get("/filters/stores")
-def fetch_stores(db: Session = Depends(get_db)):
-    return store_crud.get_unique_store_names(db)
+def fetch_stores(db: Session = Depends(get_db), regions: str = Query(None, alias="selected_regions")):
+    selected_regions = regions.split(",") if regions else None
+    print("API:", selected_regions)
+    return store_crud.get_unique_store_names(db, selected_regions=selected_regions)

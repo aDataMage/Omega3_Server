@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from schemas.ProductSchema import Product
 from schemas.ProductSchema import ProductCreate, ProductUpdate
@@ -56,8 +56,10 @@ def delete_product(product_id: str, db: Session = Depends(get_db)):
     return db_product
 
 @router.get("/filters/products")
-def fetch_product_names(db: Session = Depends(get_db)):
-    return product_crud.get_unique_product_names(db)
+def fetch_product_names(db: Session = Depends(get_db), brands: str = Query(None, alias="selected_brands")):
+    selected_brands = brands.split(",") if brands else None
+    print("API:", selected_brands)
+    return product_crud.get_unique_product_names(db, selected_brands=selected_brands)
 
 @router.get("/filters/brands")
 def fetch_brand_names(db: Session = Depends(get_db)):

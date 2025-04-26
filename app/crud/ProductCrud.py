@@ -141,15 +141,29 @@ def get_top_products_by_metric(
 
 # Get all unique product names
 def get_unique_product_names(db: Session, selected_brands: list[str] | None = None):
-    query = db.query(Product.name)
-
+    print(f"Debug - Selected products: {selected_brands}")  # Debug input
+    
+    query = db.query(Product.product_id, Product.name)
+    
     if selected_brands and "all" not in selected_brands:
-        query = query.filter(Product.brand.in_(selected_brands))
-
-    return [p[0] for p in query.distinct().all()]
-
+        valid_products = [r for r in selected_brands if r]
+        print(f"Debug - Filtering by products: {valid_products}")  # Debug filtering
+        if valid_products:
+            query = query.filter(Product.brand.in_(valid_products))
+    
+    print(f"Debug - Final query: {query}")  # Debug final query
+    results = query.distinct(Product.name).order_by(Product.name).all()
+    print(f"Debug - Found {len(results)} product")  # Debug result count
+    
+    return [{"product_id": str(product_id), "name": name} for product_id, name in results]
 
 # Get all unique brand names
-def get_unique_brand_names(db: Session):
-    return [b[0] for b in db.query(Product.brand).distinct().all()]
+def get_unique_brand_names(db: Session, selected_products: list[str] | None = None):
+    query = db.query(Product.brand)
+    
+    if selected_products and "all" not in selected_products:
+        query = query.filter(Product.name.in_(selected_products))
+        
+    results = query.distinct().all()
+    return [b[0] for b in results]
 
