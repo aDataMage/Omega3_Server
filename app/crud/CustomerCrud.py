@@ -40,3 +40,4 @@ def delete_customer(db: Session, customer_id: str):
         db.commit()
         return True
     return False
+

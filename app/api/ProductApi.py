@@ -65,5 +65,17 @@ def fetch_product_names(db: Session = Depends(get_db), brands: str = Query(None,
 def fetch_brand_names(db: Session = Depends(get_db)):
     return product_crud.get_unique_brand_names(db)
 
+@router.get("/table/brand")
+def fetch_store_table(db: Session = Depends(get_db), start_date: str = None, end_date: str = None ):
+    start_date = datetime.strptime(start_date, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
+    return product_crud.get_brand_table_data(db, start_date=start_date, end_date=end_date)
+
+
+@router.get("/table/product")
+def fetch_store_table(db: Session = Depends(get_db), start_date: str = None, end_date: str = None ):
+    start_date = datetime.strptime(start_date, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
+    return product_crud.get_product_table_data(db, start_date=start_date, end_date=end_date)
 
 

@@ -1,40 +1,45 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api import (
-    CustomerApi,
-    OrderApi,
-    OrderItemApi,
-    ProductApi,
-    ReturnsApi,
-    StoreApi,
-    KpiApi,
+from api.routes import (
+    # customer_router,
+    # order_router,
+    # order_item_router,
+    product_router,
+    # return_router,
+    # store_router,
+    kpi_router,
 )
 
-app = FastAPI()
+app = FastAPI(
+    title="My Retail API",
+    version="0.1.0",
+    description="FastAPI backend for retail KPIs and operations.",
+)
 
+# CORS setup (consider loading from env in productio
 app.add_middleware(
     CORSMiddleware,
-    # Or ["*"] to allow all (not recommended in prod)
-    allow_origins=["*"],
+    allow_origins=["*"],  # ⚠️ Replace with allowed domains in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-@app.get("/")
+@app.get("/", tags=["root"])
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Retail API up and running"}
 
 
-app.include_router(CustomerApi.router, prefix="/customers", tags=["customers"])
-app.include_router(StoreApi.router, prefix="/stores", tags=["stores"])
-app.include_router(ProductApi.router, prefix="/products", tags=["products"])
-app.include_router(OrderApi.router, prefix="/orders", tags=["orders"])
-app.include_router(ReturnsApi.router, prefix="/returns", tags=["returns"])
-app.include_router(OrderItemApi.router, prefix="/order-items", tags=["order_items"])
-app.include_router(KpiApi.router, prefix="/kpi", tags=["kpi"])
+# Register routers
+# app.include_router(customer_router, prefix="/customers", tags=["Customers"])
+# app.include_router(store_router, prefix="/stores", tags=["Stores"])
+app.include_router(product_router, prefix="/products", tags=["Products"])
+# app.include_router(order_router, prefix="/orders", tags=["Orders"])
+# app.include_router(return_router, prefix="/returns", tags=["Returns"])
+# app.include_router(order_item_router, prefix="/order-items", tags=["Order Items"])
+app.include_router(kpi_router, prefix="/kpi", tags=["kpi, v2"])
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# Optional: lifespan event handlers (if needed for DB/session/metrics)
+#
+#

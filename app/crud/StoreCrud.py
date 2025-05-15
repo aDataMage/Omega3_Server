@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from models.StoreModel import Store
 from schemas.StoreSchema import StoreCreate, StoreUpdate
@@ -7,7 +7,7 @@ from models.OrderModel import Order
 from models.OrderItemsModel import OrderItem
 from models.ReturnsModel import Return as Returns
 from models.StoreModel import Store
-from sqlalchemy import func, desc, literal, and_
+from sqlalchemy import func, desc, literal, and_, distinct
 from models.ProductModel import Product
 import uuid
 
@@ -172,3 +172,233 @@ def get_unique_store_names(db: Session, selected_regions: list[str] | None = Non
     print(f"Debug - Found {len(results)} stores")
     return [{"store_id": str(store_id), "name": name} for store_id, name in results]
 
+
+
+def get_region_table_data(db: Session, start_date: datetime, end_date: datetime) -> List[Dict[str, Any]]:
+    """
+    Returns region performance data including:
+    - Region name
+    - Top selling store
+    - Top selling product
+    - Total sales
+    - Total profit
+    - Total returns
+    - Total orders
+    - % contribution to total sales
+    """
+    
+    # First get the total sales across all regions for percentage calculation
+    total_sales_result = db.query(
+        func.sum(OrderItem.price * OrderItem.quantity).label("total_sales")
+    ).join(Order, Order.order_id == OrderItem.order_id)\
+     .filter(Order.order_date.between(start_date, end_date))\
+     .first()
+    
+    total_sales = total_sales_result[0] or 0  # Handle None case
+    
+    # Get base region data with aggregations
+    region_data = db.query(
+        Store.region.label("region_name"),
+        func.sum(OrderItem.price * OrderItem.quantity).label("total_sales"),
+        func.sum((OrderItem.price - Product.cost) * OrderItem.quantity).label("total_profit"),
+        func.count(distinct(Order.order_id)).label("total_orders"),
+    ).select_from(OrderItem)\
+     .join(Order, Order.order_id == OrderItem.order_id)\
+     .join(Store, Store.store_id == Order.store_id)\
+     .join(Product, Product.product_id == OrderItem.product_id)\
+     .filter(Order.order_date.between(start_date, end_date))\
+     .group_by(Store.region)\
+     .subquery()
+    
+    # Get top store per region
+    top_stores = db.query(
+        Store.region.label("region"),
+        Store.name.label("store_name"),
+        func.sum(OrderItem.price * OrderItem.quantity).label("store_sales")
+    ).join(Order, Order.store_id == Store.store_id)\
+     .join(OrderItem, OrderItem.order_id == Order.order_id)\
+     .filter(Order.order_date.between(start_date, end_date))\
+     .group_by(Store.region, Store.name)\
+     .subquery()
+    
+    top_store_per_region = db.query(
+        top_stores.c.region,
+        top_stores.c.store_name
+    ).distinct(top_stores.c.region)\
+     .order_by(top_stores.c.region, desc(top_stores.c.store_sales))\
+     .subquery()
+    
+    # Get top product per region
+    top_products = db.query(
+        Store.region.label("region"),
+        Product.name.label("product_name"),
+        func.sum(OrderItem.price * OrderItem.quantity).label("product_sales")
+    ).join(Order, Order.store_id == Store.store_id)\
+     .join(OrderItem, OrderItem.order_id == Order.order_id)\
+     .join(Product, Product.product_id == OrderItem.product_id)\
+     .filter(Order.order_date.between(start_date, end_date))\
+     .group_by(Store.region, Product.name)\
+     .subquery()
+    
+    top_product_per_region = db.query(
+        top_products.c.region,
+        top_products.c.product_name
+    ).distinct(top_products.c.region)\
+     .order_by(top_products.c.region, desc(top_products.c.product_sales))\
+     .subquery()
+    
+    # Get returns data
+    returns_data = db.query(
+        Store.region,
+        func.count(Returns.return_id).label("total_returns")
+    ).join(OrderItem, OrderItem.order_item_id == Returns.order_item_id)\
+     .join(Order, Order.order_id == OrderItem.order_id)\
+     .join(Store, Store.store_id == Order.store_id)\
+     .filter(Returns.return_date.between(start_date, end_date))\
+     .group_by(Store.region)\
+     .subquery()
+    
+    # Combine all data
+    final_query = db.query(
+        region_data.c.region_name,
+        top_store_per_region.c.store_name.label("top_store"),
+        top_product_per_region.c.product_name.label("top_product"),
+        region_data.c.total_sales,
+        region_data.c.total_profit,
+        func.coalesce(returns_data.c.total_returns, 0).label("total_returns"),
+        region_data.c.total_orders
+    ).outerjoin(
+        top_store_per_region,
+        top_store_per_region.c.region == region_data.c.region_name
+    ).outerjoin(
+        top_product_per_region,
+        top_product_per_region.c.region == region_data.c.region_name
+    ).outerjoin(
+        returns_data,
+        returns_data.c.region == region_data.c.region_name
+    )
+    
+    results = final_query.all()
+    
+    # Format the results with percentage calculations
+    formatted_results = []
+    for row in results:
+        sales_contribution = (row.total_sales / total_sales * 100) if total_sales > 0 else 0
+        
+        formatted_results.append({
+            "region_name": row.region_name,
+            "top_store": row.top_store,
+            "top_product": row.top_product,
+            "total_sales": row.total_sales,
+            "total_profit": row.total_profit,
+            "total_returns": row.total_returns,
+            "total_orders": row.total_orders,
+            "sales_contribution_percentage": round(sales_contribution, 2)
+        })
+    
+    return formatted_results
+
+def get_store_table_data(db: Session, start_date: datetime, end_date: datetime) -> List[Dict[str, Any]]:
+    """
+    Returns store performance data including:
+    - Store name
+    - Region
+    - Top selling product
+    - Total sales
+    - Total profit
+    - Total returns
+    - Total orders
+    - % contribution to total sales
+    """
+    
+    # First get the total sales across all stores for percentage calculation
+    total_sales_result = db.query(
+        func.sum(OrderItem.price * OrderItem.quantity).label("total_sales")
+    ).join(Order, Order.order_id == OrderItem.order_id)\
+     .filter(Order.order_date.between(start_date, end_date))\
+     .first()
+    
+    total_sales = total_sales_result[0] or 0  # Handle None case
+    
+    # Get base store data with aggregations
+    store_data = db.query(
+        Store.store_id,
+        Store.name.label("store_name"),
+        Store.region,
+        func.sum(OrderItem.price * OrderItem.quantity).label("total_sales"),
+        func.sum((OrderItem.price - Product.cost) * OrderItem.quantity).label("total_profit"),
+        func.count(distinct(Order.order_id)).label("total_orders"),
+    ).select_from(OrderItem)\
+     .join(Order, Order.order_id == OrderItem.order_id)\
+     .join(Store, Store.store_id == Order.store_id)\
+     .join(Product, Product.product_id == OrderItem.product_id)\
+     .filter(Order.order_date.between(start_date, end_date))\
+     .group_by(Store.store_id, Store.name, Store.region)\
+     .subquery()
+    
+    # Get top product per store
+    top_products = db.query(
+        Order.store_id,
+        Product.name.label("product_name"),
+        func.sum(OrderItem.price * OrderItem.quantity).label("product_sales")
+    ).join(OrderItem, OrderItem.order_id == Order.order_id)\
+     .join(Product, Product.product_id == OrderItem.product_id)\
+     .filter(Order.order_date.between(start_date, end_date))\
+     .group_by(Order.store_id, Product.name)\
+     .subquery()
+    
+    top_product_per_store = db.query(
+        top_products.c.store_id,
+        top_products.c.product_name
+    ).distinct(top_products.c.store_id)\
+     .order_by(top_products.c.store_id, desc(top_products.c.product_sales))\
+     .subquery()
+    
+    # Get returns data per store
+    returns_data = db.query(
+        Order.store_id,
+        func.count(Returns.return_id).label("total_returns")
+    ).join(OrderItem, OrderItem.order_item_id == Returns.order_item_id)\
+     .join(Order, Order.order_id == OrderItem.order_id)\
+     .filter(Returns.return_date.between(start_date, end_date))\
+     .group_by(Order.store_id)\
+     .subquery()
+    
+    # Combine all data
+    final_query = db.query(
+        store_data.c.store_id,
+        store_data.c.store_name,
+        store_data.c.region,
+        top_product_per_store.c.product_name.label("top_product"),
+        store_data.c.total_sales,
+        store_data.c.total_profit,
+        func.coalesce(returns_data.c.total_returns, 0).label("total_returns"),
+        store_data.c.total_orders
+    ).outerjoin(
+        top_product_per_store,
+        top_product_per_store.c.store_id == store_data.c.store_id
+    ).outerjoin(
+        returns_data,
+        returns_data.c.store_id == store_data.c.store_id
+    )
+    
+    results = final_query.all()
+    
+    # Format the results with percentage calculations
+    formatted_results = []
+    for row in results:
+        sales_contribution = (row.total_sales / total_sales * 100) if total_sales > 0 else 0
+        
+        formatted_results.append({
+            "store_id": row.store_id,
+            "store_name": row.store_name,
+            "region": row.region,
+            "top_product": row.top_product,
+            "total_sales": row.total_sales,
+            "total_profit": row.total_profit,
+            "total_returns": row.total_returns,
+            "total_orders": row.total_orders,
+            "sales_contribution_percentage": round(sales_contribution, 2)
+        })
+    
+    return formatted_results
