@@ -56,17 +56,17 @@ class BrandEnum(str, enum.Enum):
 
 
 class CategoryEnum(str, enum.Enum):
-    Electronics = "electronics"
-    Fashion = "fashion"
-    Home_Appliances = "home_appliances"
-    Beauty = "beauty"
-    Sports = "sports"
-    Books = "books"
-    Toys = "toys"
-    Automotive = "automotive"
-    Groceries = "groceries"
-    Furniture = "furniture"
-    Health = "health"
+    electronics = "electronics"
+    fashion = "fashion"
+    home_appliances = "home_appliances"
+    beauty = "beauty"
+    sports = "sports"
+    books = "books"
+    toys = "toys"
+    automotive = "automotive"
+    groceries = "groceries"
+    furniture = "furniture"
+    health = "health"
 
 
 class PaymentMethodEnum(str, enum.Enum):

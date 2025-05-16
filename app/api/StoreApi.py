@@ -20,14 +20,22 @@ def read_stores(db: Session = Depends(get_db)):
 def add_store(store: StoreCreate, db: Session = Depends(get_db)):
     return store_crud.create_store(db, store)
 
+
 @router.get("/top")
 def get_top_n_stores(
-    n: int = 10, db: Session = Depends(get_db), metric: str = "Total Sales", start_date: str = None, end_date: str = None 
+    n: int = 10,
+    db: Session = Depends(get_db),
+    metric: str = "Total Sales",
+    start_date: str = None,
+    end_date: str = None,
 ):
     start_date = datetime.strptime(start_date, "%Y-%m-%d")
     end_date = datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
-    stores = store_crud.get_top_stores_by_metric(db=db, metric=metric, start_date=start_date, end_date=end_date, n=n)
+    stores = store_crud.get_top_stores_by_metric(
+        db=db, metric=metric, start_date=start_date, end_date=end_date, n=n
+    )
     return stores
+
 
 @router.get("/{store_id}", response_model=Store)
 def read_store(store_id: str, db: Session = Depends(get_db)):
@@ -60,24 +68,36 @@ def read_store_by_name(store_name: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Store not found")
     return db_store
 
+
 @router.get("/filters/regions")
 def fetch_regions(db: Session = Depends(get_db)):
     return store_crud.get_unique_regions(db)
 
+
 @router.get("/filters/stores")
-def fetch_stores(db: Session = Depends(get_db), regions: str = Query(None, alias="selected_regions")):
+def fetch_stores(
+    db: Session = Depends(get_db), regions: str = Query(None, alias="selected_regions")
+):
     selected_regions = regions.split(",") if regions else None
     print("API:", selected_regions)
     return store_crud.get_unique_store_names(db, selected_regions=selected_regions)
 
+
 @router.get("/table/region")
-def fetch_region_table(db: Session = Depends(get_db), start_date: str = None, end_date: str = None ):
+def fetch_region_table(
+    db: Session = Depends(get_db), start_date: str = None, end_date: str = None
+):
     start_date = datetime.strptime(start_date, "%Y-%m-%d")
     end_date = datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
-    return store_crud.get_region_table_data(db, start_date=start_date, end_date=end_date)
+    return store_crud.get_region_table_data(
+        db, start_date=start_date, end_date=end_date
+    )
+
 
 @router.get("/table/store")
-def fetch_store_table(db: Session = Depends(get_db), start_date: str = None, end_date: str = None ):
+def fetch_store_table(
+    db: Session = Depends(get_db), start_date: str = None, end_date: str = None
+):
     start_date = datetime.strptime(start_date, "%Y-%m-%d")
     end_date = datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
     return store_crud.get_store_table_data(db, start_date=start_date, end_date=end_date)

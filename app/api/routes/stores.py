@@ -2,19 +2,20 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from schemas.StoreSchema import Store, StoreCreate, StoreUpdate
-from crud.v2.stores import StoreCRUD
+from crud.v2.stores import StoreCrud
+from schemas.StoreSchema import Store as StoreResponse
 from db.session import get_db
 from helpers.parse_date import parse_date_safe
 
 router = APIRouter()
-store_crud = StoreCRUD(get_db())
+store_crud = StoreCrud()
 # --- Routes --- #
 
 
 @router.get("/", response_model=List[Store])
 def read_stores(db: Session = Depends(get_db)):
     """Get all stores."""
-    return store_crud.get_all_stores(db)
+    return store_crud.get_stores(db)
 
 
 @router.post("/", response_model=Store)
@@ -23,7 +24,27 @@ def add_store(store: StoreCreate, db: Session = Depends(get_db)):
     return store_crud.create_store(db=db, store=store)
 
 
-@router.get("/top", response_model=List[Store])
+@router.get("/table", response_model=List[dict])
+def fetch_table_data(
+    db: Session = Depends(get_db),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    group_by: str = Query("store", enum=["store", "region"]),
+):
+    """Fetch aggregated data by store or region."""
+    start_date = parse_date_safe(start_date)
+    end_date = parse_date_safe(end_date) if end_date else None
+
+    if group_by == "region":
+        return store_crud.get_region_table_data(
+            db=db, start_date=start_date, end_date=end_date
+        )
+    return store_crud.get_store_table_data(
+        db=db, start_date=start_date, end_date=end_date
+    )
+
+
+@router.get("/top", response_model=List[dict])
 def get_top_n_stores(
     n: int = 10,
     db: Session = Depends(get_db),
@@ -81,7 +102,7 @@ def fetch_regions(db: Session = Depends(get_db)):
     return store_crud.get_unique_regions(db)
 
 
-@router.get("/filters/stores", response_model=List[str])
+@router.get("/filters/stores", response_model=List[dict])
 def fetch_stores(
     db: Session = Depends(get_db),
     regions: str = Query(None, alias="selected_regions"),
@@ -89,23 +110,3 @@ def fetch_stores(
     """Fetch store names with optional region filtering."""
     selected_regions = regions.split(",") if regions else None
     return store_crud.get_unique_store_names(db=db, selected_regions=selected_regions)
-
-
-@router.get("/table", response_model=List[dict])
-def fetch_table_data(
-    db: Session = Depends(get_db),
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
-    group_by: str = Query("store", enum=["store", "region"]),
-):
-    """Fetch aggregated data by store or region."""
-    start_date = parse_date_safe(start_date)
-    end_date = parse_date_safe(end_date) if end_date else None
-
-    if group_by == "region":
-        return store_crud.get_region_table_data(
-            db=db, start_date=start_date, end_date=end_date
-        )
-    return store_crud.get_store_table_data(
-        db=db, start_date=start_date, end_date=end_date
-    )
